@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: sale-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cloud:
+    gateway:
+      routes:
+        - id: sale-app
+          uri: ${SALE_APP_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/**
+
+sale:
+  rate-limit:
+    window-seconds: 1
+    max-requests: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

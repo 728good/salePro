@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: sale
+      MYSQL_USER: sale
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-local}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-root-local}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-change-root-local}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  nameserver:
+    image: apache/rocketmq:5.3.1
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+
+  broker:
+    image: apache/rocketmq:5.3.1
+    depends_on:
+      - nameserver
+    environment:
+      NAMESRV_ADDR: nameserver:9876
+    command: sh mqbroker -n nameserver:9876 -c /home/rocketmq/rocketmq-5.3.1/conf/broker.conf
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    volumes:
+      - ./deploy/rocketmq/broker.conf:/home/rocketmq/rocketmq-5.3.1/conf/broker.conf
+
+volumes:
+  mysql-data:
+  redis-data:
